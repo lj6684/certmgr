@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+    <bean id="dataSource"
+		class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		destroy-method="close">
+		<property name="driverClass">
+			<value>oracle.jdbc.driver.OracleDriver</value>
+		</property>
+		<property name="jdbcUrl">
+			<value>jdbc:oracle:thin:@127.0.0.1:1521:orcl</value>
+		</property>
+		<property name="user">
+			<value>emvca</value>
+		</property>
+		<property name="password">
+			<value>11111111</value>
+		</property>
+
+		<property name="minPoolSize">
+			<value>10</value>
+		</property>
+		<property name="maxPoolSize">
+			<value>40</value>
+		</property>
+		<property name="testConnectionOnCheckout">
+			<value>true</value>
+		</property>
+		<!--  2008.08.18 jiangchuanli and szz
+		<property name="maxIdleTime">
+			<value>1800</value>
+		</property>
+		<property name="acquireIncrement">
+			<value>2</value>
+		</property>
+		<property name="maxStatements">
+			<value>0</value>
+		</property>
+		<property name="initialPoolSize">
+			<value>2</value>
+		</property>
+		<property name="idleConnectionTestPeriod">
+			<value>1800</value>
+		</property>
+		<property name="acquireRetryAttempts">
+			<value>30</value>
+		</property>
+		<property name="breakAfterAcquireFailure">
+			<value>true</value>
+		</property>
+		<property name="testConnectionOnCheckout">
+			<value>false</value>
+		</property>
+        -->
+	</bean>
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.LocalSessionFactoryBean"
+		destroy-method="close">
+		<property name="dataSource">
+			<ref bean="dataSource" />
+		</property>
+		<property name="mappingResources">
+			<list>
+				<value>
+					cn/com/emv/ca/business/service/privilege/dao/model/AdminCert.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/sysinfo/dao/model/SystemCert.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/optlog/dao/model/ConsoleOptLog.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/sparekey/dao/model/Storedkey.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/sparekey/dao/model/Taskschedule.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/iccert/dao/model/ICCert.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/iccert/dao/model/ArchICCert.hbm.xml
+				</value>				
+				<value>
+					cn/com/emv/ca/business/service/optcheck/dao/model/OptApply.hbm.xml
+				</value>				
+				<value>
+					cn/com/emv/ca/business/service/issuercert/dao/model/IssuerCert.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/optlog/dao/model/Operationlog.hbm.xml
+				</value>
+				<value>
+					cn/com/emv/ca/business/service/optlog/dao/model/Operationlogarc.hbm.xml
+				</value>				
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">
+					org.hibernate.dialect.Oracle9Dialect
+				</prop>
+				<prop key="hibernate.show_sql">false</prop>
+			</props>
+		</property>
+	</bean>
+
+	
+</beans>
