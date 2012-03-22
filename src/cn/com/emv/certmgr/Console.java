@@ -93,17 +93,46 @@ public class Console {
 		String serverValidate = getUserInput("服务器证书有效期天数", "3650");
 		String adminSubject = "CN=SuperAdmin,O=EMV,C=CN";
 		String adminValidate = getUserInput("超级管理员证书有效期天数", "3650");
+		String dbType = getUserInput("数据库类型(oracle|db2)", "oracle");
 		String dbIP = getUserInput("数据库服务器IP地址", "127.0.0.1");
-		String dbPort = getUserInput("数据库服务端口", "1521");
+		String dbPort = "";
+		if(dbType.equalsIgnoreCase("oracle")) {
+			dbPort = getUserInput("数据库服务端口", "1521");
+		} else if(dbType.equalsIgnoreCase("db2")) {
+			dbPort = getUserInput("数据库服务端口", "50000");
+		} else {
+			System.err.println("数据库类型输入错误");
+			return;
+		}
+		
 		String dbSID = getUserInput("数据库服务标识(SID)", "orcl");
 		String dbUser = getUserInput("数据库用户名", "emvca");
 		String dbPassword = getUserInput("数据库用户口令", "11111111");
 		
-		File file = new File("./init_file/sql/");
+		File file = new File("./init_file/orcl_sql/");
 		if(!file.exists()) {
 			file.mkdirs();
+		} else {
+			clearFiles(new String[]{
+					"./init_file/orcl_sql/create_tables.sql", 
+					"./init_file/orcl_sql/drop_tables.sql"
+					});
 		}
 		
+		file = new File("./init_file/db2_sql/");
+		if(!file.exists()) {
+			file.mkdirs();
+		} else {
+			clearFiles(new String[]{
+					"./init_file/db2_sql/create_tables.sql", 
+					"./init_file/db2_sql/drop_tables.sql"
+					});
+		}
+		
+		clearFiles(new String[]{
+				"./init_file/Tomcat/emvca/internalConfig.properties"
+				});
+
 		CertGen generator = CertGen.getInstance();
 		// generate root cert
 		generator.genRootCert(caSubject, Integer.parseInt(caValidate));
@@ -112,16 +141,25 @@ public class Console {
 		// generate admin cert
 		X509Cert adminCert = generator.genCommonCert(adminSubject, Integer.parseInt(adminValidate), "11111111", CertTypeEnum.PFX, "./init_file/superAdmin.pfx");
 		// generate sql file
-		genSQLFile(serverCert, adminCert);
+		genSQLFile(dbType, serverCert, adminCert);
 		// generate datasource file
-		genDataSourceFile(dbIP, dbPort, dbSID, dbUser, dbPassword);
-		
+		genDataSourceFile(dbType, dbIP, dbPort, dbSID, dbUser, dbPassword);
 	}
 	
-	private void genSQLFile(X509Cert serverCert, X509Cert adminCert) {
+	private void genSQLFile(String dbType, X509Cert serverCert, X509Cert adminCert) {
 		try {
+			String outputPath = null;
+			File dropFile = null;
 			Configuration config = new Configuration();
-			config.setDirectoryForTemplateLoading(new File("./ftl"));
+			if(dbType.equalsIgnoreCase("oracle")) {
+				config.setDirectoryForTemplateLoading(new File("./ftl/orcl"));
+				outputPath = "./init_file/orcl_sql/";
+				dropFile = new File("./ftl/orcl/drop_tables.ftl");
+			} else if(dbType.equalsIgnoreCase("db2")) {
+				config.setDirectoryForTemplateLoading(new File("./ftl/db2"));
+				outputPath = "./init_file/db2_sql/";
+				dropFile = new File("./ftl/db2/drop_tables.ftl");
+			}
 			config.setObjectWrapper(new DefaultObjectWrapper());
 			
 			Template template = config.getTemplate("create_tables.ftl");
@@ -132,18 +170,17 @@ public class Console {
 			data.put("adminCertSN", adminCert.getSerialNumber().toString(16));
 			data.put("adminCertSubject", adminCert.getSubject());
 			
-			Writer writer = new OutputStreamWriter(new FileOutputStream("./init_file/sql/create_tables.sql"));
+			Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "create_tables.sql"));
 			template.process(data, writer);
 			writer.flush();
 			writer.close();
 			
-			File dropFile = new File("./ftl/drop_tables.ftl");
 			FileInputStream fin = new FileInputStream(dropFile);
 			byte[] fdata = new byte[fin.available()];
 			fin.read(fdata);
 			fin.close();
 			
-			FileOutputStream fous = new FileOutputStream("./init_file/sql/drop_tables.sql");
+			FileOutputStream fous = new FileOutputStream(outputPath + "drop_tables.sql");
 			fous.write(fdata);
 			fous.flush();
 			fous.close();
@@ -152,8 +189,21 @@ public class Console {
 		}
 	}
 	
-	private void genDataSourceFile(String dbIP, String dbPort, String dbSID, String dbUser, String dbPassword) {
+	private void genDataSourceFile(String dbType, String dbIP, String dbPort, String dbSID, String dbUser, String dbPassword) {
 		try {
+			String driver = null;
+			String dialect = null;
+			String url = null;
+			if(dbType.equalsIgnoreCase("oracle")) {
+				driver = "oracle.jdbc.driver.OracleDriver";
+				dialect = "org.hibernate.dialect.Oracle9Dialect";
+				url = "jdbc:oracle:thin:@" + dbIP + ":" + dbPort + ":" + dbSID;
+			} else if(dbType.equalsIgnoreCase("db2")) {
+				driver = "com.ibm.db2.jcc.DB2Driver";
+				dialect = "org.hibernate.dialect.DB2400Dialect";
+				url = "jdbc:db2://" + dbIP + ":" + dbPort + "/" + dbSID;
+			}
+			
 			Configuration config = new Configuration();
 			config.setDirectoryForTemplateLoading(new File("./ftl"));
 			config.setObjectWrapper(new DefaultObjectWrapper());
@@ -161,16 +211,28 @@ public class Console {
 			Template template = config.getTemplate("ca-datasource.ftl");
 			
 			Map<String, String> data = new HashMap<String, String>();
-			data.put("dbIP", dbIP);
-			data.put("dbPort", dbPort);
-			data.put("dbSID", dbSID);
+			data.put("driver", driver);
+			data.put("url", url);
 			data.put("dbUser", dbUser);
 			data.put("dbPassword", dbPassword);
+			data.put("dialect", dialect);
 			
 			Writer writer = new OutputStreamWriter(new FileOutputStream("./init_file/Tomcat/emvca/spring/ca-datasource.xml"));
 			template.process(data, writer);
 			writer.flush();
 			writer.close();
+			
+			// set internalConfig.properties file for db2
+			if(dbType.equalsIgnoreCase("db2")) {
+				FileInputStream fin = new FileInputStream("./ftl/db2/internalConfig.properties");
+				byte[] fileData = new byte[fin.available()];
+				fin.read(fileData);
+				fin.close();
+				FileOutputStream fous = new FileOutputStream("./init_file/Tomcat/emvca/internalConfig.properties");
+				fous.write(fileData);
+				fous.flush();
+				fous.close();
+			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -255,6 +317,15 @@ public class Console {
 			fous.close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
+		}
+	}
+	
+	private void clearFiles(String[] fileNames) {
+		for(String fileName : fileNames) {
+			File file = new File(fileName);
+			if(file.exists()) {
+				file.delete();
+			}
 		}
 	}
 	

@@ -8,10 +8,10 @@
 		class="com.mchange.v2.c3p0.ComboPooledDataSource"
 		destroy-method="close">
 		<property name="driverClass">
-			<value>oracle.jdbc.driver.OracleDriver</value>
+			<value>com.ibm.db2.jcc.DB2Driver</value>
 		</property>
 		<property name="jdbcUrl">
-			<value>jdbc:oracle:thin:@127.0.0.1:1521:orcl</value>
+			<value>jdbc:db2://127.0.0.1:50000/orcl</value>
 		</property>
 		<property name="user">
 			<value>emvca</value>
@@ -103,7 +103,7 @@
 		<property name="hibernateProperties">
 			<props>
 				<prop key="hibernate.dialect">
-					org.hibernate.dialect.Oracle9Dialect
+					org.hibernate.dialect.DB2400Dialect
 				</prop>
 				<prop key="hibernate.show_sql">false</prop>
 			</props>

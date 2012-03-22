@@ -1,0 +1,11 @@
+drop table ADMINCERT;
+drop table SYSTEMCERT;
+drop table SPAREKEY;
+drop table TASKSCHEDULE;
+drop table OPTAPPLY;
+drop table ISSUERCERT;
+drop table ICCERT;
+drop table ARCHICCERT;
+drop table OPERATIONLOG;
+drop table OPERATIONLOGARC;
+drop table CONSOLEOPTLOG;

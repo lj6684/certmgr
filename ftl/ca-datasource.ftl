@@ -8,10 +8,10 @@
 		class="com.mchange.v2.c3p0.ComboPooledDataSource"
 		destroy-method="close">
 		<property name="driverClass">
-			<value>oracle.jdbc.driver.OracleDriver</value>
+			<value>${driver}</value>
 		</property>
 		<property name="jdbcUrl">
-			<value>jdbc:oracle:thin:@${dbIP}:${dbPort}:${dbSID}</value>
+			<value>${url}</value>
 		</property>
 		<property name="user">
 			<value>${dbUser}</value>
@@ -103,7 +103,7 @@
 		<property name="hibernateProperties">
 			<props>
 				<prop key="hibernate.dialect">
-					org.hibernate.dialect.Oracle9Dialect
+					${dialect}
 				</prop>
 				<prop key="hibernate.show_sql">false</prop>
 			</props>
